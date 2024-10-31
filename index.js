@@ -1,39 +1,51 @@
 const express = require('express');
+const path = require('path');
+const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const userRouter = require('./routes/user');
 const productRouter = require('./routes/products');
-const dashuserRouter =require('./routes/dashuser');
+const dashuserRouter = require('./routes/dashuser');
 const logReqRes = require('./middlewares');  // Import the middleware function
-require('dotenv').config();
-const path = require('path'); 
 
+// Load environment variables
+dotenv.config();
+const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL;
+
+// Initialize Express app
 const app = express();
-const port = process.env.PORT || 3000;
 
-// Connect to the database
-connectDB();
+// Database Connection
+(async function initializeDB() {
+  try {
+    await connectDB();
+    console.log('Database connected successfully.');
+  } catch (err) {
+    console.error('Database connection failed:', err);
+    process.exit(1);  // Exit process with failure
+  }
+})();
 
-// Middleware - plugin
+// Middleware
+app.use(express.json());  // Use JSON parser for API requests
 app.use(express.urlencoded({ extended: true }));
-app.use(logReqRes('log.txt'));  // Use the logReqRes middleware with a log file
+app.use(logReqRes('log.txt'));  // Custom logging middleware
 
-
-
-// Set EJS as the templating engine
+// Set up view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Route to serve home page
+// Basic home route
 app.get('/', (req, res) => {
-    res.render('home'); // This will render 'views/home.ejs'
+  res.render('home');
 });
 
-// Routers
+// Routes
 app.use('/user', userRouter);
 app.use('/products', productRouter);
 app.use('/dashuser', dashuserRouter);
 
-// Start the server
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running at ${BASE_URL}:${PORT}`);
 });
